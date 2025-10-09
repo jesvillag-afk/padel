@@ -1,4 +1,3 @@
-
 :root {
     --primary: #6a11cb;
     --secondary: #2575fc;
@@ -224,7 +223,7 @@ body {
     font-weight: 600;
 }
 
-.podium-place.first h3, .podium-place.first p {
+.podium-place.first h3, .podel-place.first p {
     color: var(--white);
 }
 
@@ -412,4 +411,57 @@ body {
     .vs-badge {
         display: none;
     }
+}
+
+.pairs-setup-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 24px;
+}
+
+.team-card {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+}
+
+.team-slots {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.player-slot {
+    border: 2px dashed var(--light-gray);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    color: var(--gray);
+    min-height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.2s;
+}
+
+.player-slot.drag-over {
+    background-color: #e7f0ff;
+}
+
+.draggable-player {
+    background-color: #f9faff;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: grab;
+    border: 1px solid var(--light-gray);
+    transition: background-color 0.2s, opacity 0.2s;
+}
+
+.draggable-player.dragging {
+    opacity: 0.5;
+    background-color: #cce5ff;
 }
