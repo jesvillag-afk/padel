@@ -772,6 +772,12 @@ class PadelAmericano {
 
                 ${leaderboardHtml}
 
+                <div class="flex-center" style="margin-top: 24px;">
+                    <button class="padel-button btn-secondary" onclick="padelApp.prevRound()" ${this.currentRound === 0 ? 'disabled' : ''}>← Ronda Anterior</button>
+                    <button class="padel-button" onclick="padelApp.renderMidGamePlayerAdder()">+ Añadir Jugador</button>
+                    <button class="padel-button btn-secondary" onclick="padelApp.nextRound()" ${this.currentRound === this.rounds.length - 1 ? 'disabled' : ''}>Siguiente Ronda →</button>
+                </div>
+
                 <div class="text-center" style="margin-top: 24px;">
                     <button class="padel-button btn-danger" onclick="padelApp.finishTournament()">Finalizar Torneo</button>
                 </div>
