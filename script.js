@@ -403,22 +403,7 @@ class PadelAmericano {
         this.render();
     }
 
-    finishMatch(matchIndex) {
-        const match = this.rounds[this.currentRound][matchIndex];
-        if (match.score1 !== '' && match.score2 !== '') {
-            match.finished = true;
-            this.calculateLeaderboard();
-            this.saveState();
-            this.render();
-        }
-    }
 
-    reopenMatch(matchIndex) {
-        this.rounds[this.currentRound][matchIndex].finished = false;
-        this.calculateLeaderboard();
-        this.saveState();
-        this.render();
-    }
 
     calculateLeaderboard() {
         const playerStats = {};
@@ -428,7 +413,7 @@ class PadelAmericano {
 
         this.rounds.forEach(round => {
             round.forEach(match => {
-                if (match.finished) {
+                if (match.score1 !== '' && match.score2 !== '') {
                     const score1 = parseInt(match.score1) || 0;
                     const score2 = parseInt(match.score2) || 0;
                     const team1Won = score1 > score2;
@@ -468,6 +453,7 @@ class PadelAmericano {
     }
 
     nextRound() {
+        this.calculateLeaderboard();
         if (this.currentRound < this.rounds.length - 1) {
             this.currentRound++;
             this.resetTimer();
@@ -477,6 +463,7 @@ class PadelAmericano {
     }
 
     prevRound() {
+        this.calculateLeaderboard();
         if (this.currentRound > 0) {
             this.currentRound--;
             this.resetTimer();
@@ -709,17 +696,17 @@ class PadelAmericano {
             <div class="padel-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                     <h3 style="font-weight: 600;">Cancha ${match.court}</h3>
-                    ${match.finished ? '<span style="background: var(--green); color: var(--white); padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: 600;">✓ Terminado</span>' : ''}
+                    ${(match.score1 !== '' && match.score2 !== '') ? '<span style="background: var(--green); color: var(--white); padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: 600;">✓</span>' : ''}
                 </div>
                 <div class="team-area">
                     <div class="team-names">${match.team1.join(' & ')}</div>
-                    <input type="number" class="score-input" value="${match.score1}" onchange="padelApp.updateScore(${index}, 1, this.value)" ${match.finished ? 'disabled' : ''}>
+                    <input type="number" class="score-input" value="${match.score1}" onchange="padelApp.updateScore(${index}, 1, this.value)">
                     <div class="vs-badge">VS</div>
-                    <input type="number" class="score-input" value="${match.score2}" onchange="padelApp.updateScore(${index}, 2, this.value)" ${match.finished ? 'disabled' : ''}>
+                    <input type="number" class="score-input" value="${match.score2}" onchange="padelApp.updateScore(${index}, 2, this.value)">
                     <div class="team-names">${match.team2.join(' & ')}</div>
                 </div>
                 <div class="text-center" style="margin-top: 16px;">
-                    ${match.finished ? `<button class="padel-button btn-secondary" onclick="padelApp.reopenMatch(${index})">✏️ Editar</button>` : `<button class="padel-button btn-primary" onclick="padelApp.finishMatch(${index})" ${match.score1 === '' || match.score2 === '' ? 'disabled' : ''}>✓ Finalizar Partido</button>`}
+                    <button class="padel-button btn-primary" onclick="padelApp.calculateLeaderboard(); padelApp.saveState(); padelApp.render();" ${match.score1 === '' || match.score2 === '' ? 'disabled' : ''}>Actualizar Clasificación</button>
                 </div>
             </div>
         `).join('');
