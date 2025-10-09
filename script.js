@@ -645,6 +645,23 @@ class PadelAmericano {
                     </div>`;
         }).join('');
 
+        let playerSectionHtml;
+        if (this.gameMode === 'individual') {
+            playerSectionHtml = `
+                <div id="player-list" style="margin-bottom: 16px;">
+                    ${playerInputs}
+                </div>
+                <button class="padel-button btn-secondary" style="width: 100%;" onclick="padelApp.addPlayer()">+ Añadir Fila</button>
+            `;
+        } else { // 'pairs' mode
+            playerSectionHtml = `
+                <div id="pairs-setup" style="padding: 16px; border: 2px dashed var(--light-gray); border-radius: 8px; text-align: center; color: var(--gray);">
+                    <p>Próximamente: ¡Aquí podrás armar tus equipos!</p>
+                    <p style="font-size: 0.9rem;">(Paso 2 de la implementación)</p>
+                </div>
+            `;
+        }
+
         const courtOptions = `
             <option value="1" ${this.numCourts == 1 ? 'selected' : ''}>1 Cancha</option>
             ${validCount >= 8 ? `<option value="2" ${this.numCourts == 2 ? 'selected' : ''}>2 Canchas</option>` : ''}
@@ -668,14 +685,24 @@ class PadelAmericano {
                                 <button class="padel-button btn-secondary" onclick="padelApp.renderPlayerPoolManager()">Editar Lista</button>
                             </div>
                         </div>
-                        <div id="player-list" style="margin-bottom: 16px;">
-                            ${playerInputs}
-                        </div>
-                        <button class="padel-button btn-secondary" style="width: 100%;" onclick="padelApp.addPlayer()">+ Añadir Fila</button>
+                        ${playerSectionHtml}
                     </div>
 
                     <div class="padel-card">
                         <h2 style="font-weight: 600; margin-bottom: 16px;">⚙️ Configuración</h2>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; font-weight: 600; margin-bottom: 8px;">Modo de Juego</label>
+                            <div style="display: flex; gap: 16px;">
+                                <label style="display: flex; align-items: center; gap: 4px;">
+                                    <input type="radio" name="gameMode" value="individual" onchange="padelApp.setGameMode('individual')" ${this.gameMode === 'individual' ? 'checked' : ''}>
+                                    Individual
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 4px;">
+                                    <input type="radio" name="gameMode" value="pairs" onchange="padelApp.setGameMode('pairs')" ${this.gameMode === 'pairs' ? 'checked' : ''}>
+                                    En Parejas
+                                </label>
+                            </div>
+                        </div>
                         <div style="margin-bottom: 16px;">
                             <label style="display: block; font-weight: 600; margin-bottom: 8px;">Nº de Canchas</label>
                             <select class="padel-input" onchange="padelApp.updateCourts(this.value)" ${validCount < 8 ? 'disabled' : ''}>
