@@ -536,11 +536,23 @@ class PadelAmericano {
     }
 
     render() {
+        const activeElementId = document.activeElement ? document.activeElement.id : null;
+
         const app = document.getElementById('padel-americano-app');
         app.innerHTML = ''; // Clear previous content
         if (this.stage === 'setup') this.renderSetup(app);
         else if (this.stage === 'playing') this.renderPlaying(app);
         else if (this.stage === 'finished') this.renderFinished(app);
+
+        if (activeElementId) {
+            const newActiveElement = document.getElementById(activeElementId);
+            if (newActiveElement) {
+                newActiveElement.focus();
+                if (newActiveElement.tagName === 'INPUT') {
+                    newActiveElement.selectionStart = newActiveElement.selectionEnd = newActiveElement.value.length;
+                }
+            }
+        }
     }
 
     renderModal(content) {
@@ -700,9 +712,9 @@ class PadelAmericano {
                 </div>
                 <div class="team-area">
                     <div class="team-names">${match.team1.join(' & ')}</div>
-                    <input type="number" class="score-input" value="${match.score1}" onchange="padelApp.updateScore(${index}, 1, this.value)">
+                    <input id="score-input-${index}-1" type="number" class="score-input" value="${match.score1}" oninput="padelApp.updateScore(${index}, 1, this.value)" onchange="padelApp.updateScore(${index}, 1, this.value)">
                     <div class="vs-badge">VS</div>
-                    <input type="number" class="score-input" value="${match.score2}" onchange="padelApp.updateScore(${index}, 2, this.value)">
+                    <input id="score-input-${index}-2" type="number" class="score-input" value="${match.score2}" oninput="padelApp.updateScore(${index}, 2, this.value)" onchange="padelApp.updateScore(${index}, 2, this.value)">
                     <div class="team-names">${match.team2.join(' & ')}</div>
                 </div>
                 <div class="text-center" style="margin-top: 16px;">
