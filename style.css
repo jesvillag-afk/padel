@@ -403,4 +403,13 @@ body {
         order: 0;
         transform: scale(1);
     }
+
+    .team-area {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .vs-badge {
+        display: none;
+    }
 }

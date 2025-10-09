@@ -713,9 +713,9 @@ class PadelAmericano {
                 </div>
                 <div class="team-area">
                     <div class="team-names">${match.team1.join(' & ')}</div>
-                    <input type="number" class="score-input" value="${match.score1}" oninput="padelApp.updateScore(${index}, 1, this.value)" onchange="padelApp.updateScore(${index}, 1, this.value)" ${match.finished ? 'disabled' : ''}>
+                    <input type="number" class="score-input" value="${match.score1}" onchange="padelApp.updateScore(${index}, 1, this.value)" ${match.finished ? 'disabled' : ''}>
                     <div class="vs-badge">VS</div>
-                    <input type="number" class="score-input" value="${match.score2}" oninput="padelApp.updateScore(${index}, 2, this.value)" onchange="padelApp.updateScore(${index}, 2, this.value)" ${match.finished ? 'disabled' : ''}>
+                    <input type="number" class="score-input" value="${match.score2}" onchange="padelApp.updateScore(${index}, 2, this.value)" ${match.finished ? 'disabled' : ''}>
                     <div class="team-names">${match.team2.join(' & ')}</div>
                 </div>
                 <div class="text-center" style="margin-top: 16px;">
