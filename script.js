@@ -236,7 +236,7 @@ class PadelAmericano {
                 this.savePlayerPool();
             }
 
-            const { rounds: newSchedule, restsByRound: newRests } = this.generateTournament(this.players, this.numCourts);
+            const { rounds: newSchedule, restsByRound: newRests } = this.generateTournament(this.players, this.numCourts, this.gameMode);
 
             this.rounds.splice(this.currentRound + 1, Infinity, ...newSchedule.slice(this.currentRound + 1));
             this.restsByRound.splice(this.currentRound + 1, Infinity, ...newRests.slice(this.currentRound + 1));
@@ -420,7 +420,7 @@ class PadelAmericano {
         return rounds;
     }
 
-    generateTournament(playerList, courts) {
+    generateTournament(playerList, courts, gameMode) {
         const validPlayers = playerList.map(p => p.trim()).filter(Boolean);
         const n = validPlayers.length;
         if (n < 4) return { rounds: [], restsByRound: [] };
@@ -435,12 +435,21 @@ class PadelAmericano {
             const playingInRound = new Set();
 
             for (let court = 1; court <= courts; court++) {
-                if (availablePairs.length < 2) break;
-                const matchPairs = availablePairs.splice(0, 2);
-                const team1 = matchPairs[0];
-                const team2 = matchPairs[1];
-                roundMatches.push({ team1, team2, court, score1: '', score2: '', finished: false });
-                [...team1, ...team2].forEach(p => playingInRound.add(p));
+                if (gameMode === 'pairs') {
+                    if (availablePairs.length < 1) break;
+                    const match = availablePairs.shift();
+                    const team1 = [match[0]];
+                    const team2 = [match[1]];
+                    roundMatches.push({ team1, team2, court, score1: '', score2: '', finished: false });
+                    [...team1, ...team2].forEach(p => playingInRound.add(p));
+                } else {
+                    if (availablePairs.length < 2) break;
+                    const matchPairs = availablePairs.splice(0, 2);
+                    const team1 = matchPairs[0];
+                    const team2 = matchPairs[1];
+                    roundMatches.push({ team1, team2, court, score1: '', score2: '', finished: false });
+                    [...team1, ...team2].forEach(p => playingInRound.add(p));
+                }
             }
             allRounds.push(roundMatches);
             const resting = validPlayers.filter(p => !playingInRound.has(p));
@@ -467,7 +476,7 @@ class PadelAmericano {
             }
         }
 
-        const { rounds, restsByRound } = this.generateTournament(participants, this.numCourts);
+        const { rounds, restsByRound } = this.generateTournament(participants, this.numCourts, this.gameMode);
         this.rounds = rounds;
         this.restsByRound = restsByRound;
         this.currentRound = 0;
@@ -581,7 +590,7 @@ class PadelAmericano {
     }
 
     playAgain() {
-        const { rounds, restsByRound } = this.generateTournament(this.players, this.numCourts);
+        const { rounds, restsByRound } = this.generateTournament(this.players, this.numCourts, this.gameMode);
         this.rounds = rounds;
         this.restsByRound = restsByRound;
         this.stage = 'playing';
@@ -734,19 +743,46 @@ class PadelAmericano {
     renderSetup(app) {
         const isPairs = this.gameMode === 'pairs';
 
-        let contentHtml = '';
+        const validPlayersCount = this.players.filter(p => p.trim() !== '').length;
+        const playerInputs = this.players.map((player, index) => {
+            const removeButton = this.players.length > 4 ? `<button class="padel-button" style="background: transparent; color: var(--red);" onclick="padelApp.removePlayer(${index})">✕</button>` : '';
+            return `<div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <input type="text" value="${player}" placeholder="Jugador ${index + 1}" class="padel-input" onchange="padelApp.updatePlayer(${index}, this.value)">
+                        ${removeButton}
+                    </div>`;
+        }).join('');
 
+        const playersHtml = `
+            <div class="padel-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h2 style="font-weight: 600; margin: 0;">👥 Jugadores (${validPlayersCount})</h2>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="padel-button btn-secondary" onclick="padelApp.renderPlayerLoader()">Cargar</button>
+                        <button class="padel-button btn-secondary" onclick="padelApp.renderPlayerPoolManager()">Editar Lista</button>
+                    </div>
+                </div>
+                <div id="player-list" style="margin-bottom: 16px;">
+                    ${playerInputs}
+                </div>
+                <button class="padel-button btn-secondary" style="width: 100%;" onclick="padelApp.addPlayer()">+ Añadir Fila</button>
+            </div>
+        `;
+
+        let pairsHtml = '';
         if (isPairs) {
             const assignedPlayers = new Set(this.teams.flatMap(t => t.players.filter(p => p.trim() !== '')));
             const availablePlayers = this.players.filter(p => p.trim() !== '' && !assignedPlayers.has(p));
 
             const teamsHtml = this.teams.map((team, teamIndex) => {
                 return `<div class="team-card">
-                            <input type="text" value="${team.name}" onchange="padelApp.updateTeamName(${teamIndex}, this.value)" class="padel-input" placeholder="Nombre del Equipo">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <input type="text" value="${team.name}" onchange="padelApp.updateTeamName(${teamIndex}, this.value)" class="padel-input" placeholder="Nombre del Equipo">
+                                <button class="padel-button" style="background: transparent; color: var(--red);" onclick="padelApp.removeTeam(${teamIndex})">✕</button>
+                            </div>
                             <div class="team-slots">
                                 ${team.players.map((player, playerIndex) => `
-                                    <div class="player-slot" 
-                                         ondragover="padelApp.handleDragOver(event)" 
+                                    <div class="player-slot"
+                                         ondragover="padelApp.handleDragOver(event)"
                                          ondrop="padelApp.handleDrop(event, ${teamIndex}, ${playerIndex})"
                                          ondragenter="event.currentTarget.classList.add('drag-over')"
                                          ondragleave="event.currentTarget.classList.remove('drag-over')">
@@ -760,59 +796,43 @@ class PadelAmericano {
                 return `<div class="draggable-player" draggable="true" ondragstart="padelApp.handleDragStart(event, '${player}')" ondragend="padelApp.handleDragEnd(event)">${player}</div>`;
             }).join('');
 
-            contentHtml = `
-                <div class="pairs-setup-grid">
-                    <div class="padel-card">
-                        <h2 style="font-weight: 600; margin-bottom: 16px;">Jugadores Disponibles</h2>
-                        <div id="available-players-list">
-                            ${availablePlayersHtml || '<p>No hay jugadores disponibles.</p>'}
-                        </div>
-                    </div>
-                    <div class="padel-card">
-                        <h2 style="font-weight: 600; margin-bottom: 16px;">Equipos</h2>
-                        <div id="teams-list">
-                            ${teamsHtml}
-                        </div>
-                         <button class="padel-button btn-secondary" style="width: 100%; margin-top: 16px;" onclick="padelApp.addTeam()">+ Añadir Equipo</button>
-                    </div>
-                </div>
-            `;
-
-        } else {
-            const validCount = this.players.filter(p => p.trim() !== '').length;
-            const canStart = validCount >= 4;
-            const playerInputs = this.players.map((player, index) => {
-                const removeButton = this.players.length > 4 ? `<button class="padel-button" style="background: transparent; color: var(--red);" onclick="padelApp.removePlayer(${index})">✕</button>` : '';
-                return `<div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                            <input type="text" value="${player}" placeholder="Jugador ${index + 1}" class="padel-input" onchange="padelApp.updatePlayer(${index}, this.value)">
-                            ${removeButton}
-                        </div>`;
-            }).join('');
-
-            contentHtml = `
+            pairsHtml = `
                 <div class="padel-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                        <h2 style="font-weight: 600; margin: 0;">👥 Jugadores (${validCount})</h2>
-                        <div style="display: flex; gap: 8px;">
-                            <button class="padel-button btn-secondary" onclick="padelApp.renderPlayerLoader()">Cargar</button>
-                            <button class="padel-button btn-secondary" onclick="padelApp.renderPlayerPoolManager()">Editar Lista</button>
-                        </div>
+                    <h2 style="font-weight: 600; margin-bottom: 16px;">Jugadores Disponibles</h2>
+                    <div id="available-players-list" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;">
+                        ${availablePlayersHtml || '<p>No hay jugadores disponibles.</p>'}
                     </div>
-                    <div id="player-list" style="margin-bottom: 16px;">
-                        ${playerInputs}
+
+                    <h2 style="font-weight: 600; margin-bottom: 16px;">Equipos</h2>
+                    <div id="teams-list">
+                        ${teamsHtml}
                     </div>
-                    <button class="padel-button btn-secondary" style="width: 100%;" onclick="padelApp.addPlayer()">+ Añadir Fila</button>
+                    <button class="padel-button btn-secondary" style="width: 100%; margin-top: 16px;" onclick="padelApp.addTeam()">+ Añadir Equipo</button>
                 </div>
             `;
         }
 
-        const validCount = isPairs ? this.teams.filter(t => t.players.every(p=>p.trim() !== '')).length : this.players.filter(p => p.trim() !== '').length;
+        const validCount = isPairs ? this.teams.filter(t => t.players.every(p=>p.trim() !== '')).length : validPlayersCount;
         const canStart = validCount >= 4;
-        const courtOptions = `
-            <option value="1" ${this.numCourts == 1 ? 'selected' : ''}>1 Cancha</option>
-            ${validCount >= 8 ? `<option value="2" ${this.numCourts == 2 ? 'selected' : ''}>2 Canchas</option>` : ''}
-        `;
-        const courtMessage = validCount < 8 ? '<small style="color: var(--gray); display: block; margin-top: 4px;">Se necesita un mínimo de 8 jugadores/equipos para usar 2 canchas.</small>' : '';
+        let courtOptions = '';
+        if (isPairs) {
+            const maxCourts = Math.floor(validCount / 2);
+            for (let i = 1; i <= maxCourts; i++) {
+                courtOptions += `<option value="${i}" ${this.numCourts == i ? 'selected' : ''}>${i} Cancha${i > 1 ? 's' : ''}</option>`;
+            }
+            if (maxCourts === 0) {
+                courtOptions = `<option value="1" selected>1 Cancha</option>`;
+            }
+        } else {
+            courtOptions = `
+                <option value="1" ${this.numCourts == 1 ? 'selected' : ''}>1 Cancha</option>
+                ${validCount >= 8 ? `<option value="2" ${this.numCourts == 2 ? 'selected' : ''}>2 Canchas</option>` : ''}
+            `;
+        }
+
+        const courtMessage = isPairs ?
+            (validCount < 4 ? '<small style="color: var(--gray); display: block; margin-top: 4px;">Se necesita un mínimo de 4 equipos para más canchas.</small>' : '') :
+            (validCount < 8 ? '<small style="color: var(--gray); display: block; margin-top: 4px;">Se necesita un mínimo de 8 jugadores para usar 2 canchas.</small>' : '');
 
         app.innerHTML = `
             <div class="padel-container">
@@ -821,32 +841,36 @@ class PadelAmericano {
                     <p class="padel-subtitle">Configura tu torneo y empieza a jugar</p>
                 </div>
 
-                <div class="${isPairs ? '' : 'grid-2'}">
-                    ${contentHtml}
-
-                    <div class="padel-card">
-                        <h2 style="font-weight: 600; margin-bottom: 16px;">⚙️ Configuración</h2>
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; font-weight: 600; margin-bottom: 8px;">Modo de Juego</label>
-                            <div style="display: flex; gap: 16px;">
-                                <label style="display: flex; align-items: center; gap: 4px;">
-                                    <input type="radio" name="gameMode" value="individual" onchange="padelApp.setGameMode('individual')" ${this.gameMode === 'individual' ? 'checked' : ''}>
-                                    Individual
-                                </label>
-                                <label style="display: flex; align-items: center; gap: 4px;">
-                                    <input type="radio" name="gameMode" value="pairs" onchange="padelApp.setGameMode('pairs')" ${this.gameMode === 'pairs' ? 'checked' : ''}>
-                                    En Parejas
-                                </label>
+                <div class="grid-2">
+                    <div>
+                        ${playersHtml}
+                        ${isPairs ? pairsHtml : ''}
+                    </div>
+                    <div>
+                        <div class="padel-card">
+                            <h2 style="font-weight: 600; margin-bottom: 16px;">⚙️ Configuración</h2>
+                            <div style="margin-bottom: 16px;">
+                                <label style="display: block; font-weight: 600; margin-bottom: 8px;">Modo de Juego</label>
+                                <div style="display: flex; gap: 16px;">
+                                    <label style="display: flex; align-items: center; gap: 4px;">
+                                        <input type="radio" name="gameMode" value="individual" onchange="padelApp.setGameMode('individual')" ${this.gameMode === 'individual' ? 'checked' : ''}>
+                                        Individual
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 4px;">
+                                        <input type="radio" name="gameMode" value="pairs" onchange="padelApp.setGameMode('pairs')" ${this.gameMode === 'pairs' ? 'checked' : ''}>
+                                        En Parejas
+                                    </label>
+                                </div>
                             </div>
+                            <div style="margin-bottom: 16px;">
+                                <label style="display: block; font-weight: 600; margin-bottom: 8px;">Nº de Canchas</label>
+                                <select class="padel-input" onchange="padelApp.updateCourts(this.value)">
+                                    ${courtOptions}
+                                </select>
+                                ${courtMessage}
+                            </div>
+                            <button class="padel-button btn-primary" style="width: 100%;" onclick="padelApp.startTournament()" ${!canStart ? 'disabled' : ''}>Iniciar Torneo</button>
                         </div>
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; font-weight: 600; margin-bottom: 8px;">Nº de Canchas</label>
-                            <select class="padel-input" onchange="padelApp.updateCourts(this.value)" ${validCount < 8 ? 'disabled' : ''}>
-                                ${courtOptions}
-                            </select>
-                            ${courtMessage}
-                        </div>
-                        <button class="padel-button btn-primary" style="width: 100%;" onclick="padelApp.startTournament()" ${!canStart ? 'disabled' : ''}>Iniciar Torneo</button>
                     </div>
                 </div>
             </div>
@@ -868,16 +892,22 @@ class PadelAmericano {
         }
     }
 
-    editTimer() {
-        if (this.isTimerRunning) {
-            alert("No se puede editar el tiempo mientras el cronómetro está en marcha.");
-            return;
-        }
-        const newMinutes = prompt("Introduce los nuevos minutos para el temporizador:", this.timerMinutes);
-        if (newMinutes !== null && !isNaN(newMinutes) && newMinutes > 0) {
-            this.timerMinutes = parseInt(newMinutes);
-            this.timerSeconds = this.timerMinutes * 60;
+    updateTimerFromUI() {
+        if (this.isTimerRunning) return;
+
+        const minutesEl = document.getElementById('timer-minutes');
+        const secondsEl = document.getElementById('timer-seconds');
+
+        const minutes = parseInt(minutesEl.textContent, 10);
+        const seconds = parseInt(secondsEl.textContent, 10);
+
+        if (!isNaN(minutes) && !isNaN(seconds) && minutes >= 0 && seconds >= 0 && seconds < 60) {
+            this.timerMinutes = minutes;
+            this.timerSeconds = (minutes * 60) + seconds;
             this.saveState();
+            this.render(); // Re-render to format the numbers correctly
+        } else {
+            // If input is invalid, revert to the current time
             this.render();
         }
     }
@@ -927,6 +957,9 @@ class PadelAmericano {
             </div>
         ` : '';
 
+        const minutes = Math.floor(this.timerSeconds / 60);
+        const seconds = this.timerSeconds % 60;
+
         app.innerHTML = `
             <div class="padel-container">
                 <div class="text-center">
@@ -935,7 +968,10 @@ class PadelAmericano {
 
                 <div class="padel-card">
                     <h3 style="text-align: center; font-weight: 600; margin-bottom: 16px;">⏱️ Timer</h3>
-                    <div id="timer-display" style="font-size: 3rem; font-weight: 700; text-align: center; font-family: monospace; color: ${this.timerSeconds <= 60 ? 'var(--red)' : 'var(--primary)'}; cursor: pointer;" onclick="padelApp.editTimer()">${this.formatTime(this.timerSeconds)}</div>
+                    <div id="timer-display" style="font-size: 3rem; font-weight: 700; text-align: center; font-family: monospace; color: ${this.timerSeconds <= 60 ? 'var(--red)' : 'var(--primary)'};">
+                        <span id="timer-minutes" contenteditable="true" onblur="padelApp.updateTimerFromUI()" onkeydown="if(event.key==='Enter') { event.preventDefault(); this.blur(); }">${minutes.toString().padStart(2, '0')}</span>:
+                        <span id="timer-seconds" contenteditable="true" onblur="padelApp.updateTimerFromUI()" onkeydown="if(event.key==='Enter') { event.preventDefault(); this.blur(); }">${seconds.toString().padStart(2, '0')}</span>
+                    </div>
                     <div id="last-minute-warning" style="color:var(--red); font-weight:bold; text-align:center; display: none;">¡Último minuto!</div>
                     <div id="time-up-warning" style="color:var(--red); font-weight:bold; text-align:center; display: none;">¡Tiempo terminado!</div>
                     <div class="flex-center" style="margin-top: 16px;">

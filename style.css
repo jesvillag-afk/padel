@@ -413,12 +413,6 @@ body {
     }
 }
 
-.pairs-setup-grid {
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 24px;
-}
-
 .team-card {
     background: var(--white);
     border-radius: 12px;
