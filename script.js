@@ -459,6 +459,7 @@ class PadelAmericano {
             this.resetTimer();
             this.saveState();
             this.render();
+            window.scrollTo(0, 0);
         }
     }
 
@@ -469,6 +470,7 @@ class PadelAmericano {
             this.resetTimer();
             this.saveState();
             this.render();
+            window.scrollTo(0, 0);
         }
     }
 
@@ -505,27 +507,30 @@ class PadelAmericano {
         this.render();
     }
 
-    exportResults() {
-        if (!this.leaderboard.length) return;
+    async shareLeaderboard() {
+        const leaderboardCard = document.getElementById('leaderboard-card');
+        if (!leaderboardCard) return;
 
-        const header = "🏆 Resultados del Torneo 🏆";
-        const columns = "Pos | Jugador | G | P | PF | PC | +/-";
-        const separator = "-----------------------------------------";
-
-        const rows = this.leaderboard.map(p => {
-            const rank = this.getRankIcon(p.rank);
-            const diff = p.pointDifference > 0 ? `+${p.pointDifference}` : p.pointDifference;
-            return `${rank} | ${p.name} | ${p.wins} | ${p.losses} | ${p.pointsFor} | ${p.pointsAgainst} | ${diff}`;
-        }).join('\n');
-
-        const text = `${header}\n\n${columns}\n${separator}\n${rows}`;
-
-        navigator.clipboard.writeText(text).then(() => {
-            alert('¡Resultados copiados al portapapeles!');
-        }).catch(err => {
-            console.error('Error al copiar los resultados: ', err);
-            alert('Error al copiar. Revisa la consola para más detalles.');
-        });
+        try {
+            const canvas = await html2canvas(leaderboardCard);
+            canvas.toBlob(async (blob) => {
+                if (blob) {
+                    const file = new File([blob], "clasificacion-padel.png", { type: "image/png" });
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            files: [file],
+                            title: 'Clasificación del Torneo de Pádel',
+                            text: 'Aquí está la clasificación actual del torneo.'
+                        });
+                    } else {
+                        alert('Tu navegador no soporta compartir archivos.');
+                    }
+                }
+            }, 'image/png');
+        } catch (error) {
+            console.error('Error al generar la imagen:', error);
+            alert('Hubo un error al generar la imagen para compartir.');
+        }
     }
 
     getRankIcon(rank) {
@@ -700,6 +705,20 @@ class PadelAmericano {
         }
     }
 
+    editTimer() {
+        if (this.isTimerRunning) {
+            alert("No se puede editar el tiempo mientras el cronómetro está en marcha.");
+            return;
+        }
+        const newMinutes = prompt("Introduce los nuevos minutos para el temporizador:", this.timerMinutes);
+        if (newMinutes !== null && !isNaN(newMinutes) && newMinutes > 0) {
+            this.timerMinutes = parseInt(newMinutes);
+            this.timerSeconds = this.timerMinutes * 60;
+            this.saveState();
+            this.render();
+        }
+    }
+
     renderPlaying(app) {
         const currentMatches = this.rounds[this.currentRound] || [];
         const restingPlayers = this.restsByRound[this.currentRound] || [];
@@ -724,10 +743,10 @@ class PadelAmericano {
         `).join('');
 
         const leaderboardHtml = this.leaderboard.length > 0 ? `
-            <div class="padel-card">
+            <div class="padel-card" id="leaderboard-card">
                 <h2 class="text-center" style="font-weight: 600; margin-bottom: 16px;">🏆 Clasificación</h2>
                 <table class="leaderboard-table">
-                    <thead><tr><th>Pos</th><th>Jugador</th><th>G</th><th>P</th><th>+/-</th></tr></thead>
+                    <thead><tr><th>Pos</th><th>Jugador</th><th>G</th><th>P</th><th>P.F.</th><th>P.C.</th><th>+/-</th></tr></thead>
                     <tbody>
                         ${this.leaderboard.map(p => `
                             <tr>
@@ -735,6 +754,8 @@ class PadelAmericano {
                                 <td style="font-weight: 600;">${p.name}</td>
                                 <td style="color: var(--green);">${p.wins}</td>
                                 <td style="color: var(--red);">${p.losses}</td>
+                                <td>${p.pointsFor}</td>
+                                <td>${p.pointsAgainst}</td>
                                 <td style="font-weight: 600; color: ${p.pointDifference >= 0 ? 'var(--green)' : 'var(--red)'};">${p.pointDifference > 0 ? '+' : ''}${p.pointDifference}</td>
                             </tr>
                         `).join('')}
@@ -751,7 +772,7 @@ class PadelAmericano {
 
                 <div class="padel-card">
                     <h3 style="text-align: center; font-weight: 600; margin-bottom: 16px;">⏱️ Timer</h3>
-                    <div id="timer-display" style="font-size: 3rem; font-weight: 700; text-align: center; font-family: monospace; color: ${this.timerSeconds <= 60 ? 'var(--red)' : 'var(--primary)'};">${this.formatTime(this.timerSeconds)}</div>
+                    <div id="timer-display" style="font-size: 3rem; font-weight: 700; text-align: center; font-family: monospace; color: ${this.timerSeconds <= 60 ? 'var(--red)' : 'var(--primary)'}; cursor: pointer;" onclick="padelApp.editTimer()">${this.formatTime(this.timerSeconds)}</div>
                     <div id="last-minute-warning" style="color:var(--red); font-weight:bold; text-align:center; display: none;">¡Último minuto!</div>
                     <div id="time-up-warning" style="color:var(--red); font-weight:bold; text-align:center; display: none;">¡Tiempo terminado!</div>
                     <div class="flex-center" style="margin-top: 16px;">
@@ -780,6 +801,7 @@ class PadelAmericano {
 
                 <div class="text-center" style="margin-top: 24px;">
                     <button class="padel-button btn-danger" onclick="padelApp.finishTournament()">Finalizar Torneo</button>
+                    <button class="padel-button" style="background-color: var(--green); color: var(--white);" onclick="padelApp.shareLeaderboard()">📋 Compartir</button>
                 </div>
             </div>
         `;
@@ -819,7 +841,7 @@ class PadelAmericano {
 
                 ${podiumHtml}
 
-                <div class="padel-card">
+                <div class="padel-card" id="leaderboard-card">
                     <h2 class="text-center" style="font-weight: 600; margin-bottom: 16px;">📊 Clasificación Final</h2>
                     <table class="leaderboard-table">
                         <thead><tr><th>Pos</th><th>Jugador</th><th>G</th><th>P</th><th>P.F</th><th>P.C</th><th>+/-</th></tr></thead>
@@ -832,7 +854,7 @@ class PadelAmericano {
                 <div class="flex-center" style="margin-top: 24px;">
                     <button class="padel-button btn-secondary" onclick="padelApp.playAgain()">🔄 Jugar Otra Vez</button>
                     <button class="padel-button btn-primary" onclick="padelApp.newTournament()">+ Nuevo Torneo</button>
-                    <button class="padel-button" style="background-color: var(--green); color: var(--white);" onclick="padelApp.exportResults()">📋 Exportar Resultados</button>
+                    <button class="padel-button" style="background-color: var(--green); color: var(--white);" onclick="padelApp.shareLeaderboard()">📋 Compartir Tablero</button>
                 </div>
             </div>
         `;
