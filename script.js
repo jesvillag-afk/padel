@@ -489,7 +489,16 @@ class PadelAmericano {
     updateScore(matchIndex, team, score) {
         this.rounds[this.currentRound][matchIndex][`score${team}`] = score;
         this.saveState();
-        this.render();
+
+        const match = this.rounds[this.currentRound][matchIndex];
+        const button = document.getElementById(`update-button-${matchIndex}`);
+        if (button) {
+            button.disabled = (match.score1 === '' || match.score2 === '');
+        }
+        const checkmark = document.getElementById(`match-finished-check-${matchIndex}`);
+        if (checkmark) {
+            checkmark.style.display = (match.score1 !== '' && match.score2 !== '') ? 'inline-block' : 'none';
+        }
     }
 
 
@@ -920,17 +929,17 @@ class PadelAmericano {
             <div class="padel-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                     <h3 style="font-weight: 600;">Cancha ${match.court}</h3>
-                    ${(match.score1 !== '' && match.score2 !== '') ? '<span style="background: var(--green); color: var(--white); padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: 600;">✓</span>' : ''}
+                    <span id="match-finished-check-${index}" style="background: var(--green); color: var(--white); padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; display: ${(match.score1 !== '' && match.score2 !== '') ? 'inline-block' : 'none'}">✓</span>
                 </div>
                 <div class="team-area">
                     <div class="team-names">${match.team1.join(' & ')}</div>
-                    <input id="score-input-${index}-1" type="number" class="score-input" value="${match.score1}" oninput="padelApp.updateScore(${index}, 1, this.value)" onchange="padelApp.updateScore(${index}, 1, this.value)">
+                    <input id="score-input-${index}-1" type="number" class="score-input" value="${match.score1}" oninput="padelApp.updateScore(${index}, 1, this.value)">
                     <div class="vs-badge">VS</div>
-                    <input id="score-input-${index}-2" type="number" class="score-input" value="${match.score2}" oninput="padelApp.updateScore(${index}, 2, this.value)" onchange="padelApp.updateScore(${index}, 2, this.value)">
+                    <input id="score-input-${index}-2" type="number" class="score-input" value="${match.score2}" oninput="padelApp.updateScore(${index}, 2, this.value)">
                     <div class="team-names">${match.team2.join(' & ')}</div>
                 </div>
                 <div class="text-center" style="margin-top: 16px;">
-                    <button class="padel-button btn-primary" onclick="padelApp.calculateLeaderboard(); padelApp.saveState(); padelApp.render();" ${match.score1 === '' || match.score2 === '' ? 'disabled' : ''}>Actualizar Clasificación</button>
+                    <button id="update-button-${index}" class="padel-button btn-primary" onclick="padelApp.calculateLeaderboard(); padelApp.saveState(); padelApp.render();" ${match.score1 === '' || match.score2 === '' ? 'disabled' : ''}>Actualizar Clasificación</button>
                 </div>
             </div>
         `).join('');
