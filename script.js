@@ -33,7 +33,7 @@ if (manifestPlaceholder) {
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
         const swCode = `
-            const CACHE_NAME = 'padel-americano-v11';
+            const CACHE_NAME = 'padel-americano-v12';
             const urlsToCache = ['/', 'index.html', 'style.css', 'script.js'];
 
             self.addEventListener('install', e => {
@@ -1191,8 +1191,6 @@ class PadelAmericano {
             this.render();
         }
     }
-
-}
 }
 
 let padelApp;
