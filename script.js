@@ -568,6 +568,18 @@ class PadelAmericano {
         });
     }
 
+    updateLeaderboardAndScroll() {
+        this.calculateLeaderboard();
+        this.saveState();
+        this.render();
+        setTimeout(() => {
+            const leaderboard = document.getElementById('leaderboard-card');
+            if (leaderboard) {
+                leaderboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 100);
+    }
+
     nextRound() {
         this.calculateLeaderboard();
         if (this.currentRound < this.rounds.length - 1) {
@@ -942,7 +954,7 @@ class PadelAmericano {
                     <div class="team-names">${match.team2.join(' & ')}</div>
                 </div>
                 <div class="text-center" style="margin-top: 16px;">
-                    <button id="update-button-${index}" class="padel-button btn-primary" onclick="padelApp.calculateLeaderboard(); padelApp.saveState(); padelApp.render();" ${match.score1 === '' || match.score2 === '' ? 'disabled' : ''}>Actualizar Clasificación</button>
+                    <button id="update-button-${index}" class="padel-button btn-primary" onclick="padelApp.updateLeaderboardAndScroll()" ${match.score1 === '' || match.score2 === '' ? 'disabled' : ''}>Actualizar Clasificación</button>
                 </div>
             </div>
         `).join('');
