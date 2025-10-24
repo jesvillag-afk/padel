@@ -910,7 +910,7 @@ class PadelAmericano {
         const minutes = parseInt(minutesEl.textContent, 10);
         const seconds = parseInt(secondsEl.textContent, 10);
 
-        if (!isNaN(minutes) && !isNaN(seconds) && minutes >= 0 && seconds >= 0 && seconds < 60) {
+        if (!isNaN(minutes) && !isNaN(seconds) && minutes >= 0 && seconds >= 0) {
             this.timerMinutes = minutes;
             this.timerSeconds = (minutes * 60) + seconds;
             this.saveState();
