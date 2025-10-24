@@ -770,6 +770,9 @@ class PadelAmericano {
                         <button class="padel-button btn-secondary" onclick="padelApp.renderPlayerPoolManager()">Editar Lista</button>
                     </div>
                 </div>
+                <p style="font-size: 0.9rem; color: var(--gray); margin-top: -8px; margin-bottom: 16px;">
+                    Usa "Editar Lista" para crear una lista de jugadores reutilizable. Luego, usa "Cargar" para añadirlos al torneo.
+                </p>
                 <div id="player-list" style="margin-bottom: 16px;">
                     ${playerInputs}
                 </div>
