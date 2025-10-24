@@ -112,12 +112,14 @@ class PadelAmericano {
         this.timerInterval = null;
         this.isTimerRunning = false;
         this.gameMode = 'individual'; // New state for game mode
+        this.savedTournaments = [];
         this.init();
     }
 
     init() {
         this.loadState();
         this.loadPlayerPool();
+        this.loadSavedTournaments();
         this.render();
     }
 
@@ -178,6 +180,25 @@ class PadelAmericano {
             }
         } catch (e) {
             console.error('No se pudo cargar la lista de jugadores');
+        }
+    }
+
+    loadSavedTournaments() {
+        try {
+            const saved = JSON.parse(localStorage.getItem('padelSavedTournaments'));
+            if (saved && Array.isArray(saved)) {
+                this.savedTournaments = saved;
+            }
+        } catch (e) {
+            console.error('No se pudo cargar el historial de torneos');
+        }
+    }
+
+    saveSavedTournaments() {
+        try {
+            localStorage.setItem('padelSavedTournaments', JSON.stringify(this.savedTournaments));
+        } catch (e) {
+            console.error('No se pudo guardar el historial de torneos');
         }
     }
 
@@ -608,6 +629,25 @@ class PadelAmericano {
         this.stopTimer();
         this.saveState();
         this.render();
+
+        setTimeout(() => {
+            if (confirm('¿Deseas guardar el resultado de este torneo en el historial?')) {
+                const tournamentName = prompt('Ingresa un nombre para este torneo:', `Torneo del ${new Date().toLocaleDateString()}`);
+                if (tournamentName) {
+                    const tournamentData = {
+                        id: Date.now(),
+                        name: tournamentName,
+                        date: new Date().toISOString(),
+                        leaderboard: this.leaderboard,
+                        players: this.players,
+                        gameMode: this.gameMode,
+                    };
+                    this.savedTournaments.push(tournamentData);
+                    this.saveSavedTournaments();
+                    alert(`Torneo "${tournamentName}" guardado.`);
+                }
+            }
+        }, 500);
     }
 
     playAgain() {
@@ -668,6 +708,11 @@ class PadelAmericano {
         return `#${rank}`;
     }
 
+    showHistory() {
+        this.stage = 'history';
+        this.render();
+    }
+
     render() {
         const activeElementId = document.activeElement ? document.activeElement.id : null;
 
@@ -676,6 +721,7 @@ class PadelAmericano {
         if (this.stage === 'setup') this.renderSetup(app);
         else if (this.stage === 'playing') this.renderPlaying(app);
         else if (this.stage === 'finished') this.renderFinished(app);
+        else if (this.stage === 'history') this.renderHistory(app);
 
         if (activeElementId) {
             const newActiveElement = document.getElementById(activeElementId);
@@ -894,6 +940,7 @@ class PadelAmericano {
                                 ${courtMessage}
                             </div>
                             <button class="padel-button btn-primary" style="width: 100%;" onclick="padelApp.startTournament()" ${!canStart ? 'disabled' : ''}>Iniciar Torneo</button>
+                            <button class="padel-button btn-secondary" style="width: 100%; margin-top: 16px;" onclick="padelApp.showHistory()">Historial de Torneos</button>
                         </div>
                     </div>
                 </div>
@@ -1082,6 +1129,70 @@ class PadelAmericano {
             </div>
         `;
     }
+
+    renderHistory(app) {
+        const historyHtml = this.savedTournaments.map(t => `
+            <div class="padel-card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h3 style="font-weight: 600; margin: 0;">${t.name}</h3>
+                        <p style="color: var(--gray); margin: 4px 0 0;">${new Date(t.date).toLocaleString()}</p>
+                    </div>
+                    <div>
+                        <button class="padel-button btn-secondary" onclick="padelApp.viewSavedTournament(${t.id})">Ver</button>
+                        <button class="padel-button btn-danger" onclick="padelApp.deleteSavedTournament(${t.id})">Borrar</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        app.innerHTML = `
+            <div class="padel-container">
+                <div class="text-center">
+                    <h1 class="padel-title">Historial de Torneos</h1>
+                </div>
+                ${historyHtml || '<p class="text-center">No hay torneos guardados.</p>'}
+                <div class="text-center" style="margin-top: 24px;">
+                    <button class="padel-button btn-primary" onclick="padelApp.newTournament()">Volver al Inicio</button>
+                </div>
+            </div>
+        `;
+    }
+
+    viewSavedTournament(id) {
+        const tournament = this.savedTournaments.find(t => t.id === id);
+        if (tournament) {
+            // For now, just show the leaderboard in a modal
+            const leaderboardHtml = tournament.leaderboard.map(p => `
+                <tr>
+                    <td><span class="rank-${p.rank}">${this.getRankIcon(p.rank)}</span></td>
+                    <td style="font-weight: 600;">${p.name}</td>
+                    <td>${p.wins}</td>
+                    <td>${p.losses}</td>
+                    <td>${p.pointDifference > 0 ? '+' : ''}${p.pointDifference}</td>
+                </tr>
+            `).join('');
+
+            const modalContent = `
+                <h2 style="font-weight: 600; margin-bottom: 16px;">${tournament.name}</h2>
+                <table class="leaderboard-table">
+                    <thead><tr><th>Pos</th><th>Jugador</th><th>G</th><th>P</th><th>+/-</th></tr></thead>
+                    <tbody>${leaderboardHtml}</tbody>
+                </table>
+            `;
+            this.renderModal(modalContent);
+        }
+    }
+
+    deleteSavedTournament(id) {
+        if (confirm('¿Estás seguro de que quieres borrar este torneo del historial?')) {
+            this.savedTournaments = this.savedTournaments.filter(t => t.id !== id);
+            this.saveSavedTournaments();
+            this.render();
+        }
+    }
+
+}
 }
 
 let padelApp;
